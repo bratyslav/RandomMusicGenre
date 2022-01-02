@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Random Genre</string>
+    <string name="next_btn_name">Next</string>
+    <string name="play_btn_name">Play</string>
+</resources>
