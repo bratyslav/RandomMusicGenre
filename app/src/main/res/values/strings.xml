@@ -1,5 +1,10 @@
 <resources>
     <string name="app_name">Random Genre</string>
+    <string name="add_to_favorites_btn_name">Save</string>
     <string name="next_btn_name">Next</string>
     <string name="play_btn_name">Play</string>
+
+    <string name="favorites_switch_name">Favorites </string>
+    <string name="favorites_switch_on">Favorites</string>
+    <string name="favorites_switch_off">All </string>
 </resources>
