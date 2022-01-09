@@ -8,25 +8,16 @@ import android.view.View
 import com.slavikodev.random_music_genre.databinding.ActivityMainBinding
 import com.slavikodev.random_music_genre.db.Database
 import com.slavikodev.random_music_genre.db.DatabaseRoomImpl
-import com.slavikodev.random_music_genre.db.room.Genre
 import java.net.URLEncoder
-import kotlin.random.Random
 
-class MainActivity : AppCompatActivity(), View.OnClickListener {
+class MainActivity : AppCompatActivity(), View.OnClickListener, MainActivityPresenter.View {
 
-    companion object {
-        const val PLAY_APP_PKG_NAME = "com.google.android.apps.youtube.music"
-        const val PLAY_APP_URI = "https://music.youtube.com"
-        const val LOG_TAG = "MainActivity"
-    }
-
+    private lateinit var presenter: MainActivityPresenter
     private lateinit var binding: ActivityMainBinding
     private lateinit var database: Database
-    private lateinit var genres: List<String>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         binding.play.setOnClickListener(this)
@@ -35,37 +26,29 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         binding.switchToFavorites.setOnClickListener(this)
 
         database = DatabaseRoomImpl.getDatabase(this)
-        initialLoadFavorites()
-        genres = database.getAll()
-        binding.genre.text = randomGenre
-    }
 
-    private fun initialLoadFavorites() {
-        if (database.getAll().isEmpty()) {
-            val bufferReader = resources.openRawResource(R.raw.genres).bufferedReader()
-            val genresString = bufferReader.use {
-                it.readText()
-            }
-            genres = genresString
-                .split("\n")
-                .filter {
-                        x -> x.isNotEmpty()
-                }
-            for (genre in genres) {
-                database.insert(genre)
-            }
+        val bufferReader = resources.openRawResource(R.raw.genres).bufferedReader()
+        val genresString = bufferReader.use {
+            it.readText()
         }
+        presenter = MainActivityPresenter(this, database, genresString)
     }
 
-    private var isFavorites = false
+    override fun setGenreViewText(genreName: String) {
+        binding.genre.text = genreName
+    }
 
-    private val randomGenre get() = genres[Random.nextInt(genres.size)]
+    override fun log(tag: String, message: String) {
+        Log.wtf(tag, message)
+    }
 
     override fun onClick(view: View?) {
         when (view?.id) {
-            binding.next.id -> {
-                binding.genre.text = randomGenre
-            }
+            binding.next.id -> presenter.showRandomGenre()
+
+            binding.addToFavorites.id -> presenter.addToFavorites(binding.genre.text)
+
+            binding.switchToFavorites.id -> presenter.switchToFavorites()
 
             binding.play.id -> {
                 // Try to start "Youtube Music" app.
@@ -80,27 +63,13 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                     Log.wtf(LOG_TAG, "launchIntent is Null")
                 }
             }
-
-            binding.addToFavorites.id -> {
-                val genreName = binding.genre.text as String
-                database.update(genreName, true)
-            }
-
-            binding.switchToFavorites.id -> {
-                if (isFavorites) {
-                    isFavorites = false
-                    genres = database.getAll()
-                    binding.genre.text = randomGenre
-                } else {
-                    isFavorites = true
-                    val favoriteGenres = database.getFavorites()
-                    if (favoriteGenres.isNotEmpty()) {
-                        genres = database.getFavorites()
-                        binding.genre.text = randomGenre
-                    }
-                }
-            }
         }
+    }
+
+    companion object {
+        const val LOG_TAG = "MainActivity"
+        const val PLAY_APP_PKG_NAME = "com.google.android.apps.youtube.music"
+        const val PLAY_APP_URI = "https://music.youtube.com"
     }
 
 }
